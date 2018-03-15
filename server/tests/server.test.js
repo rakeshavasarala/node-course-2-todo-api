@@ -10,7 +10,9 @@ const todos = [{
   text: 'First text todo'
 }, {
   _id: new ObjectID(),
-  text: 'Second text todo'
+  text: 'Second text todo',
+  completed: true,
+  completedAt: 23456543
 }]
 
 beforeEach((done) => {
@@ -134,5 +136,70 @@ describe('DELETE /todods/:id', () => {
       .delete(`/todos/123`)
       .expect(404)
       .end(done);
+  });
+});
+
+describe('PATCH /todos/:id', () => {
+  it('should update the todo', (done) => {
+    var hexId = todos[0]._id.toHexString();
+    var updatedText = 'First text todo updated'
+    request(app)
+      .patch(`/todos/${hexId}`)
+      .send({
+        text: updatedText,
+        completed: true
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.todo.text).toBe(updatedText);
+        expect(res.body.todo.completed).toBe(true);
+      })
+      .end((err, res) => {
+        if(err) {
+          return done(err);
+        }
+
+        Todo.findById(hexId).then((todo) => {
+          console.log({todo});
+          expect(todo.text).toBe(updatedText);
+          expect(todo.completed).toBe(true);
+          var completedAt = todo.completedAt;
+          console.log(completedAt);
+          //expect(completedAt).toBeA('number');
+          done();
+        }).catch((e) => done(e));
+      });
+
+  });
+
+  it('should clear completedAt when todo is not completed', (done) => {
+    var hexId = todos[1]._id.toHexString();
+    var updatedText = 'Second text todo updated'
+    request(app)
+      .patch(`/todos/${hexId}`)
+      .send({
+        text: updatedText,
+        completed: false
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.todo.text).toBe(updatedText);
+        expect(res.body.todo.completed).toBe(false);
+      })
+      .end((err, res) => {
+        if(err) {
+          return done(err);
+        }
+
+        Todo.findById(hexId).then((todo) => {
+          console.log({todo});
+          expect(todo.text).toBe(updatedText);
+          expect(todo.completed).toBe(false);
+          var completedAt = todo.completedAt;
+          console.log(completedAt);
+          expect(completedAt).toBe(null);
+          done();
+        }).catch((e) => done(e));
+      });
   });
 });
